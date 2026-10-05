@@ -1,0 +1,4 @@
+stages/
+__pycache__/
+*.pyc
+.rdiff-tmp-*

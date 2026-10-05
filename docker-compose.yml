@@ -1,0 +1,42 @@
+# Block-delta pipeline with strict read isolation.
+#
+# Each stage mounts ONLY what it is allowed to read:
+#
+#   signature : ro ./stages/1_sig_in   (baseline only)
+#               rw ./stages/1_sig_out  (signature)
+#   delta     : ro ./stages/2_delta_in (signature + NEW file only; the
+#               baseline is never present in this directory)
+#               rw ./stages/2_delta_out(patch)
+#   apply     : ro ./stages/3_apply_in (baseline + patch only; the NEW
+#               file is never present in this directory)
+#               rw ./stages/3_apply_out(reconstructed target)
+#
+# Fixed, stage-relative file names keep the containers parameter-free:
+#   baseline, signature, newfile, patch, target
+#
+# Run the whole thing with: ./scripts/run_pipeline.sh
+
+services:
+  signature:
+    build: .
+    image: rdiff:latest
+    command: ["signature", "/in/baseline", "/out/signature"]
+    volumes:
+      - ./stages/1_sig_in:/in:ro
+      - ./stages/1_sig_out:/out
+
+  delta:
+    build: .
+    image: rdiff:latest
+    command: ["delta", "/in/signature", "/in/newfile", "/out/patch"]
+    volumes:
+      - ./stages/2_delta_in:/in:ro
+      - ./stages/2_delta_out:/out
+
+  apply:
+    build: .
+    image: rdiff:latest
+    command: ["apply", "/in/baseline", "/in/patch", "/out/target"]
+    volumes:
+      - ./stages/3_apply_in:/in:ro
+      - ./stages/3_apply_out:/out
