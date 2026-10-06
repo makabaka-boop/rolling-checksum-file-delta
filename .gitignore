@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+/work/
+/data/in/
+/data/new/
+/data/out/
+.rdiff-apply-*.tmp

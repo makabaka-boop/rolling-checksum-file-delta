@@ -1,0 +1,41 @@
+# 三个工具容器：每个只挂载它需要的目录，
+# 输入目录一律只读（:ro），只有一个可写输出目录。
+#
+# 访问隔离的关键约束（也体现在代码参数层面）：
+#   signature：只读基线，写签名
+#   delta    ：只读签名 + 新文件，容器内根本没有基线正文
+#   apply    ：只读基线 + 补丁，容器内根本没有新文件；COPY 只引用冻结基线
+
+services:
+  signature:
+    build: .
+    image: rdiff:local
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./data/in:/in:ro
+      - ./work/sig:/out
+    command: ["signature", "/in/baseline.bin", "/out/baseline.sig"]
+
+  delta:
+    image: rdiff:local
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./work/sig:/sig:ro
+      - ./data/new:/new:ro
+      - ./work/patch:/out
+    command: ["delta", "/sig/baseline.sig", "/new/new.bin", "/out/new.patch"]
+
+  apply:
+    image: rdiff:local
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./data/in:/in:ro
+      - ./work/patch:/patch:ro
+      - ./data/out:/out
+    command: ["apply", "/in/baseline.bin", "/patch/new.patch", "/out/reconstructed.bin"]
